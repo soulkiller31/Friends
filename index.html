@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>For My Best Friend 💝</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="bg-hearts"></div>
+
+    <main>
+      <section class="hero" id="hero">
+        <h1>For My Best Friend</h1>
+        <p>Made with love, joy, and a little bit of magic just for you ✨</p>
+        <div class="picker">
+          <label for="photoPicker" class="secondary" role="button">Add your photos (optional)</label>
+          <input id="photoPicker" type="file" accept="image/*" multiple hidden />
+          <small class="hint">Tip: select 6–15 pics for the best look</small>
+        </div>
+        <button id="startButton" class="primary">I have something for you</button>
+      </section>
+
+      <section class="scene hidden" id="scene">
+        <div class="gift-area">
+          <div class="gift-box" id="giftBox" aria-label="Mystery gift box" role="img">
+            <div class="box"></div>
+            <div class="lid"></div>
+            <div class="ribbon ribbon-x"></div>
+            <div class="ribbon ribbon-y"></div>
+            <button id="openGift" class="open-btn" aria-label="Open the gift">Open it</button>
+          </div>
+          <div class="fx-layer" id="balloonLayer" aria-hidden="true"></div>
+          <div class="fx-layer" id="butterflyLayer" aria-hidden="true"></div>
+          <div class="fx-layer" id="confettiLayer" aria-hidden="true"></div>
+        </div>
+
+        <div id="sliderWrapper" class="slider-wrapper hidden" aria-live="polite">
+          <div class="slider glass" id="slider"></div>
+        </div>
+      </section>
+    </main>
+
+    <div id="quoteModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="quoteTitle">
+      <div class="modal-content glass">
+        <button class="close" id="closeModal" aria-label="Close">×</button>
+        <h2 id="quoteTitle">A note for you</h2>
+        <p id="quoteText"></p>
+      </div>
+    </div>
+
+    <footer>
+      <small>Made with 💖 just for you</small>
+    </footer>
+
+    <script src="./script.js" defer></script>
+  </body>
+</html>
