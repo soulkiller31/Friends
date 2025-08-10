@@ -43,6 +43,30 @@ const fallbackPhotos = [
   'https://images.unsplash.com/photo-1541101767792-f9b2b1c4f127?q=80&w=1600&auto=format&fit=crop'
 ];
 
+// Attempt to load local images named assets/photos/pic1.jpg..pic10.jpg
+async function loadLocalPhotos() {
+  const candidates = Array.from({ length: 10 }, (_, i) => `./assets/photos/pic${i + 1}.jpg`);
+  const present = [];
+  for (const url of candidates) {
+    // eslint-disable-next-line no-await-in-loop
+    const ok = await checkImageExists(url);
+    if (ok) present.push(url);
+  }
+  return present;
+}
+
+function checkImageExists(url, timeoutMs = 2500) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    let done = false;
+    const finish = (val) => { if (!done) { done = true; resolve(val); } };
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    img.onload = () => { clearTimeout(timer); finish(true); };
+    img.onerror = () => { clearTimeout(timer); finish(false); };
+    img.src = url + `?t=${Date.now()}`; // cache-bust during dev
+  });
+}
+
 // ---------------------- Photo picker ----------------------
 photoPickerLabel?.addEventListener('click', () => photoPicker?.click());
 
@@ -69,7 +93,8 @@ photoPicker?.addEventListener('change', async (e) => {
 // If user never selects, prepare defaults on start
 async function ensurePhotosReady() {
   if (photoUrls.length === 0) {
-    photoUrls = [...fallbackPhotos];
+    const local = await loadLocalPhotos();
+    photoUrls = local.length ? local : [...fallbackPhotos];
     photoQuotes = await generateQuotesForPhotos(photoUrls);
   }
 }
