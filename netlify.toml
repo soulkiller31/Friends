@@ -1,0 +1,17 @@
+[build]
+  publish = "."
+  command = ""
+
+[dev]
+  publish = "."
+  port = 8888
+
+[[headers]]
+  for = "/script.js"
+  [headers.values]
+    Cache-Control = "public, max-age=60"
+
+[[headers]]
+  for = "/styles.css"
+  [headers.values]
+    Cache-Control = "public, max-age=60"
