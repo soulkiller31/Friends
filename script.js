@@ -319,7 +319,7 @@ function buildSlider(urls, quotes) {
 function startAutoRotate(total) {
   stopAutoRotate();
   currentIndex = 0;
-  sliderInterval = setInterval(() => nextSlide(total), 3500);
+  sliderInterval = setInterval(() => nextSlide(total), 3200);
 }
 
 function stopAutoRotate() { if (sliderInterval) clearInterval(sliderInterval); }
@@ -328,7 +328,7 @@ function nextSlide(total) {
   const track = slider.querySelector('.slides');
   if (!track || !total) return;
   currentIndex = (currentIndex + 1) % total;
-  track.style.transform = `translateX(-${currentIndex * 100}%)`;
+  track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
 }
 
 // ---------------------- Modal ----------------------

@@ -106,16 +106,21 @@ button.primary:hover { transform: translateY(-2px); box-shadow: 0 16px 30px rgba
 @keyframes confetti { to { transform: translateY(-100vh) rotate(420deg); opacity: .2; } }
 
 /* Slider */
-.slider-wrapper { width: min(960px, 94vw); }
+.slider-wrapper { width: min(960px, 94vw); animation: floaty 8s ease-in-out infinite; }
+@keyframes floaty { 0% { transform: translateY(0); } 50% { transform: translateY(-6px); } 100% { transform: translateY(0); } }
 .glass {
   background: var(--glass); backdrop-filter: blur(10px);
   border: 1px solid var(--glass-border); border-radius: 20px; box-shadow: 0 16px 40px rgba(0,0,0,.15);
 }
-.slider { position: relative; overflow: hidden; height: min(64vw, 420px); }
-.slides { display: flex; height: 100%; transition: transform .8s ease; }
-.slide { position: relative; min-width: 100%; height: 100%; display: grid; place-items: center; cursor: pointer; }
+/* Set a reliable height for the slider with aspect ratio fallback */
+.slider {
+  position: relative; overflow: hidden; height: clamp(280px, 56vw, 500px);
+  aspect-ratio: 16 / 9;
+}
+.slides { display: flex; height: 100%; transition: transform .8s ease; will-change: transform; }
+.slide { position: relative; flex: 0 0 100%; height: 100%; display: grid; place-items: center; cursor: pointer; }
 .slide img {
-  width: 100%; height: 100%; object-fit: cover; filter: saturate(1.05) contrast(1.02);
+  width: 100%; height: 100%; object-fit: cover; object-position: center; image-rendering: auto;
 }
 .slide .caption { position: absolute; bottom: 8px; right: 12px; background: rgba(0,0,0,.35); color: #fff; padding: 6px 10px; border-radius: 12px; font-size: 12px; }
 
