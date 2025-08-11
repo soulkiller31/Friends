@@ -33,6 +33,17 @@ let photoQuotes = [];
 let currentIndex = 0;
 let sliderInterval;
 
+function setOpenReadyState(isReady) {
+  if (!openGiftBtn) return;
+  openGiftBtn.disabled = !isReady;
+  if (!isReady) {
+    openGiftBtn.dataset.prevText = openGiftBtn.textContent || '';
+    openGiftBtn.textContent = 'Preparing...';
+  } else {
+    openGiftBtn.textContent = openGiftBtn.dataset.prevText || 'Open it';
+  }
+}
+
 // Fallback images if user does not select any
 const fallbackPhotos = [
   'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1600&auto=format&fit=crop',
@@ -45,27 +56,50 @@ const fallbackPhotos = [
 
 // Attempt to load local images named assets/photos/pic1.jpg..pic20.jpg
 async function loadLocalPhotos() {
-  const maxCount = 20;
-  const exts = ['jpg', 'jpeg', 'png', 'webp', 'jgp'];
-  const prefixes = ['pic', ''];
-  const bases = ['./assets/photos/', './assets/'];
-  const candidates = [];
-  for (let i = 1; i <= maxCount; i++) {
-    for (const base of bases) {
-      for (const prefix of prefixes) {
-        for (const ext of exts) {
-          const name = prefix ? `${prefix}${i}.${ext}` : `${i}.${ext}`;
-          candidates.push(`${base}${name}`);
-        }
-      }
+  // Fast, budgeted discovery to avoid long blocking when files are missing
+  const likelyCombos = [
+    { base: './assets/', prefix: 'pic', first: 'pic1.jpg' },
+    { base: './assets/photos/', prefix: 'pic', first: 'pic1.jpg' },
+    { base: './assets/', prefix: '', first: '1.jpg' },
+    { base: './assets/photos/', prefix: '', first: '1.jpg' },
+  ];
+  const fallbackExts = ['jpg', 'jpeg', 'png', 'webp'];
+
+  // Try to find a primer file quickly
+  let discovered = null;
+  for (const combo of likelyCombos) {
+    const ok = await checkImageExists(`${combo.base}${combo.first}`, 400);
+    if (ok) {
+      discovered = combo;
+      break;
     }
   }
+  if (!discovered) return [];
+
+  // Collect up to 24 photos with short timeouts; stop if long streak of misses
   const present = [];
-  for (const url of candidates) {
-    // eslint-disable-next-line no-await-in-loop
-    const ok = await checkImageExists(url, 1200);
-    if (ok) present.push(url);
-    if (present.length >= 24) break; // early cutoff to avoid long scans
+  let consecutiveMisses = 0;
+  for (let i = 1; i <= 20 && present.length < 24; i++) {
+    const candidates = [];
+    const primaryName = discovered.prefix ? `${discovered.prefix}${i}` : String(i);
+    for (const ext of fallbackExts) {
+      candidates.push(`${discovered.base}${primaryName}.${ext}`);
+    }
+    let foundOne = false;
+    for (const url of candidates) {
+      // eslint-disable-next-line no-await-in-loop
+      if (await checkImageExists(url, 350)) {
+        present.push(url);
+        foundOne = true;
+        break;
+      }
+    }
+    if (!foundOne) {
+      consecutiveMisses += 1;
+      if (consecutiveMisses >= 6) break; // bail out early if many gaps
+    } else {
+      consecutiveMisses = 0;
+    }
   }
   return present;
 }
@@ -78,7 +112,8 @@ function checkImageExists(url, timeoutMs = 2500) {
     const timer = setTimeout(() => finish(false), timeoutMs);
     img.onload = () => { clearTimeout(timer); finish(true); };
     img.onerror = () => { clearTimeout(timer); finish(false); };
-    img.src = url + `?t=${Date.now()}`; // cache-bust during dev
+    const sep = url.includes('?') ? '&' : '?';
+    img.src = url + `${sep}t=${Date.now()}`; // cache-bust during dev
   });
 }
 
@@ -93,6 +128,7 @@ photoPicker?.addEventListener('change', async (e) => {
     photoUrls = [...fallbackPhotos];
     photoQuotes = await generateQuotesForPhotos(photoUrls);
     photoPickerLabel.textContent = 'No photos chosen (using defaults)';
+    setOpenReadyState(true);
     return;
   }
 
@@ -100,6 +136,7 @@ photoPicker?.addEventListener('change', async (e) => {
   // Convert to object URLs for immediate preview
   photoUrls = selectedPhotos.map((f) => URL.createObjectURL(f));
   photoPickerLabel.textContent = `${files.length} photos added ✔`;
+  setOpenReadyState(true);
 
   // Precompute quotes
   photoQuotes = await generateQuotesForPhotos(photoUrls);
@@ -115,13 +152,22 @@ async function ensurePhotosReady() {
 }
 
 // ---------------------- Flow ----------------------
-startButton.addEventListener('click', async () => {
-  await ensurePhotosReady();
+startButton.addEventListener('click', () => {
   hero.classList.add('hidden');
   scene.classList.remove('hidden');
+  // Enable immediately if user already selected photos, otherwise prepare defaults
+  if (photoUrls.length > 0) {
+    setOpenReadyState(true);
+  } else {
+    setOpenReadyState(false);
+    ensurePhotosReady()
+      .catch(() => {})
+      .finally(() => setOpenReadyState(true));
+  }
 });
 
 openGiftBtn.addEventListener('click', () => {
+  if (openGiftBtn.disabled) return; // guard
   giftBox.classList.add('open');
   openGiftBtn.disabled = true;
   openGiftBtn.textContent = 'Yay!';
@@ -259,6 +305,7 @@ function analyzeImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
+    img.referrerPolicy = 'no-referrer';
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas');
@@ -309,14 +356,30 @@ function buildSlider(urls, quotes) {
     slide.dataset.index = String(idx);
 
     const img = document.createElement('img');
-    img.src = src;
     img.alt = `Memory ${idx + 1}`;
+    img.decoding = 'async';
+    img.loading = 'lazy';
+    img.referrerPolicy = 'no-referrer';
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
-      // mark portrait images so CSS can contain instead of crop
       if (img.naturalHeight > img.naturalWidth) {
         img.classList.add('portrait');
       }
     };
+    img.onerror = () => {
+      // Mark slide to show an error state instead of blank
+      slide.style.background = 'repeating-linear-gradient(45deg, #eee, #eee 10px, #f8f8f8 10px, #f8f8f8 20px)';
+      img.style.display = 'none';
+      const errorCap = slide.querySelector('.caption');
+      if (errorCap) errorCap.textContent = 'Image failed to load';
+    };
+    img.src = src;
+    if (img.complete) {
+      // If cached/instant load, onload might not fire; ensure orientation applied
+      if (img.naturalHeight > img.naturalWidth) {
+        img.classList.add('portrait');
+      }
+    }
     slide.appendChild(img);
 
     const cap = document.createElement('div');
