@@ -13,26 +13,21 @@ python3 -m http.server 8080
 
 Then open `http://localhost:8080` and click “I have something for you”.
 
-## Replace photos with your own
+## Add your own photos
 
-1. Create the folder `assets/photos/` at the project root.
-2. Add your images as `1.jpg`, `2.jpg`, ... (or any names).
-3. Open `script.js` and replace the `photos` array with the relative paths to your images, for example:
+You have two easy options:
 
-```js
-const photos = [
-  './assets/photos/1.jpg',
-  './assets/photos/2.jpg',
-  './assets/photos/3.jpg',
-  // ...
-];
-```
+- Select images using the button on the page (recommended). Supports multiple selection.
+- Or, place files in the project and reload the page. The app automatically searches for images named `pic1.jpg`…`pic20.png` or `1.jpg`…`20.png` in either `assets/` or `assets/photos/`.
+
+Tip: 6–15 photos look best.
 
 ## Customize quotes
 
-Edit the `quotes` array in `script.js` with your own lovely messages. The quote shown when you click an image matches the image index (and loops if there are fewer quotes).
+Quotes are generated based on image colors and brightness. If analysis fails, a friendly default is used.
 
 ## Notes
 
 - The project uses plain HTML/CSS/JS and no external build step. It works on mobile and desktop.
 - Animations respect the user’s reduced-motion preference.
+- The slider adapts to different aspect ratios and marks portrait images to avoid cropping.
