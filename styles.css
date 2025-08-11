@@ -120,7 +120,7 @@ button.primary:hover { transform: translateY(-2px); box-shadow: 0 16px 30px rgba
 .slides { display: flex; height: 100%; transition: transform .8s ease; will-change: transform; }
 .slide { position: relative; flex: 0 0 100%; height: 100%; display: grid; place-items: center; cursor: pointer; }
 .slide img {
-  width: 100%; height: 100%; object-fit: cover; object-position: center; image-rendering: auto;
+  width: 100%; height: 100%; object-fit: contain; object-position: center; image-rendering: auto;
 }
 .slide img.portrait {
   object-fit: contain; background: transparent;
