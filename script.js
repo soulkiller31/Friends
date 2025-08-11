@@ -43,21 +43,29 @@ const fallbackPhotos = [
   'https://images.unsplash.com/photo-1541101767792-f9b2b1c4f127?q=80&w=1600&auto=format&fit=crop'
 ];
 
-// Attempt to load local images named assets/photos/pic1.jpg..pic10.jpg
+// Attempt to load local images named assets/photos/pic1.jpg..pic20.jpg
 async function loadLocalPhotos() {
   const maxCount = 20;
-  const exts = ['jpg', 'jpeg', 'png', 'webp', 'jgp']; // include common and typo
+  const exts = ['jpg', 'jpeg', 'png', 'webp', 'jgp'];
+  const prefixes = ['pic', ''];
+  const bases = ['./assets/photos/', './assets/'];
   const candidates = [];
   for (let i = 1; i <= maxCount; i++) {
-    for (const ext of exts) {
-      candidates.push(`./assets/photos/pic${i}.${ext}`);
+    for (const base of bases) {
+      for (const prefix of prefixes) {
+        for (const ext of exts) {
+          const name = prefix ? `${prefix}${i}.${ext}` : `${i}.${ext}`;
+          candidates.push(`${base}${name}`);
+        }
+      }
     }
   }
   const present = [];
   for (const url of candidates) {
     // eslint-disable-next-line no-await-in-loop
-    const ok = await checkImageExists(url);
+    const ok = await checkImageExists(url, 1200);
     if (ok) present.push(url);
+    if (present.length >= 24) break; // early cutoff to avoid long scans
   }
   return present;
 }
