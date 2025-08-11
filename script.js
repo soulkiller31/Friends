@@ -112,7 +112,8 @@ function checkImageExists(url, timeoutMs = 2500) {
     const timer = setTimeout(() => finish(false), timeoutMs);
     img.onload = () => { clearTimeout(timer); finish(true); };
     img.onerror = () => { clearTimeout(timer); finish(false); };
-    img.src = url + `?t=${Date.now()}`; // cache-bust during dev
+    const sep = url.includes('?') ? '&' : '?';
+    img.src = url + `${sep}t=${Date.now()}`; // cache-bust during dev
   });
 }
 
@@ -304,6 +305,7 @@ function analyzeImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
+    img.referrerPolicy = 'no-referrer';
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas');
@@ -356,6 +358,9 @@ function buildSlider(urls, quotes) {
     const img = document.createElement('img');
     img.alt = `Memory ${idx + 1}`;
     img.decoding = 'async';
+    img.loading = 'lazy';
+    img.referrerPolicy = 'no-referrer';
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
       if (img.naturalHeight > img.naturalWidth) {
         img.classList.add('portrait');
