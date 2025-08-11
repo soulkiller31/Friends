@@ -45,27 +45,50 @@ const fallbackPhotos = [
 
 // Attempt to load local images named assets/photos/pic1.jpg..pic20.jpg
 async function loadLocalPhotos() {
-  const maxCount = 20;
-  const exts = ['jpg', 'jpeg', 'png', 'webp', 'jgp'];
-  const prefixes = ['pic', ''];
-  const bases = ['./assets/photos/', './assets/'];
-  const candidates = [];
-  for (let i = 1; i <= maxCount; i++) {
-    for (const base of bases) {
-      for (const prefix of prefixes) {
-        for (const ext of exts) {
-          const name = prefix ? `${prefix}${i}.${ext}` : `${i}.${ext}`;
-          candidates.push(`${base}${name}`);
-        }
-      }
+  // Fast, budgeted discovery to avoid long blocking when files are missing
+  const likelyCombos = [
+    { base: './assets/', prefix: 'pic', first: 'pic1.jpg' },
+    { base: './assets/photos/', prefix: 'pic', first: 'pic1.jpg' },
+    { base: './assets/', prefix: '', first: '1.jpg' },
+    { base: './assets/photos/', prefix: '', first: '1.jpg' },
+  ];
+  const fallbackExts = ['jpg', 'jpeg', 'png', 'webp'];
+
+  // Try to find a primer file quickly
+  let discovered = null;
+  for (const combo of likelyCombos) {
+    const ok = await checkImageExists(`${combo.base}${combo.first}`, 400);
+    if (ok) {
+      discovered = combo;
+      break;
     }
   }
+  if (!discovered) return [];
+
+  // Collect up to 24 photos with short timeouts; stop if long streak of misses
   const present = [];
-  for (const url of candidates) {
-    // eslint-disable-next-line no-await-in-loop
-    const ok = await checkImageExists(url, 1200);
-    if (ok) present.push(url);
-    if (present.length >= 24) break; // early cutoff to avoid long scans
+  let consecutiveMisses = 0;
+  for (let i = 1; i <= 20 && present.length < 24; i++) {
+    const candidates = [];
+    const primaryName = discovered.prefix ? `${discovered.prefix}${i}` : String(i);
+    for (const ext of fallbackExts) {
+      candidates.push(`${discovered.base}${primaryName}.${ext}`);
+    }
+    let foundOne = false;
+    for (const url of candidates) {
+      // eslint-disable-next-line no-await-in-loop
+      if (await checkImageExists(url, 350)) {
+        present.push(url);
+        foundOne = true;
+        break;
+      }
+    }
+    if (!foundOne) {
+      consecutiveMisses += 1;
+      if (consecutiveMisses >= 6) break; // bail out early if many gaps
+    } else {
+      consecutiveMisses = 0;
+    }
   }
   return present;
 }
@@ -115,10 +138,19 @@ async function ensurePhotosReady() {
 }
 
 // ---------------------- Flow ----------------------
-startButton.addEventListener('click', async () => {
-  await ensurePhotosReady();
+startButton.addEventListener('click', () => {
   hero.classList.add('hidden');
   scene.classList.remove('hidden');
+  // prevent opening until photos ready
+  openGiftBtn.disabled = true;
+  const prevLabel = openGiftBtn.textContent;
+  openGiftBtn.textContent = 'Preparing...';
+  ensurePhotosReady()
+    .catch(() => {})
+    .finally(() => {
+      openGiftBtn.disabled = false;
+      openGiftBtn.textContent = prevLabel || 'Open it';
+    });
 });
 
 openGiftBtn.addEventListener('click', () => {
