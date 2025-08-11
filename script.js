@@ -33,6 +33,17 @@ let photoQuotes = [];
 let currentIndex = 0;
 let sliderInterval;
 
+function setOpenReadyState(isReady) {
+  if (!openGiftBtn) return;
+  openGiftBtn.disabled = !isReady;
+  if (!isReady) {
+    openGiftBtn.dataset.prevText = openGiftBtn.textContent || '';
+    openGiftBtn.textContent = 'Preparing...';
+  } else {
+    openGiftBtn.textContent = openGiftBtn.dataset.prevText || 'Open it';
+  }
+}
+
 // Fallback images if user does not select any
 const fallbackPhotos = [
   'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1600&auto=format&fit=crop',
@@ -116,6 +127,7 @@ photoPicker?.addEventListener('change', async (e) => {
     photoUrls = [...fallbackPhotos];
     photoQuotes = await generateQuotesForPhotos(photoUrls);
     photoPickerLabel.textContent = 'No photos chosen (using defaults)';
+    setOpenReadyState(true);
     return;
   }
 
@@ -123,6 +135,7 @@ photoPicker?.addEventListener('change', async (e) => {
   // Convert to object URLs for immediate preview
   photoUrls = selectedPhotos.map((f) => URL.createObjectURL(f));
   photoPickerLabel.textContent = `${files.length} photos added ✔`;
+  setOpenReadyState(true);
 
   // Precompute quotes
   photoQuotes = await generateQuotesForPhotos(photoUrls);
@@ -141,19 +154,19 @@ async function ensurePhotosReady() {
 startButton.addEventListener('click', () => {
   hero.classList.add('hidden');
   scene.classList.remove('hidden');
-  // prevent opening until photos ready
-  openGiftBtn.disabled = true;
-  const prevLabel = openGiftBtn.textContent;
-  openGiftBtn.textContent = 'Preparing...';
-  ensurePhotosReady()
-    .catch(() => {})
-    .finally(() => {
-      openGiftBtn.disabled = false;
-      openGiftBtn.textContent = prevLabel || 'Open it';
-    });
+  // Enable immediately if user already selected photos, otherwise prepare defaults
+  if (photoUrls.length > 0) {
+    setOpenReadyState(true);
+  } else {
+    setOpenReadyState(false);
+    ensurePhotosReady()
+      .catch(() => {})
+      .finally(() => setOpenReadyState(true));
+  }
 });
 
 openGiftBtn.addEventListener('click', () => {
+  if (openGiftBtn.disabled) return; // guard
   giftBox.classList.add('open');
   openGiftBtn.disabled = true;
   openGiftBtn.textContent = 'Yay!';
@@ -341,14 +354,20 @@ function buildSlider(urls, quotes) {
     slide.dataset.index = String(idx);
 
     const img = document.createElement('img');
-    img.src = src;
     img.alt = `Memory ${idx + 1}`;
+    img.decoding = 'async';
     img.onload = () => {
-      // mark portrait images so CSS can contain instead of crop
       if (img.naturalHeight > img.naturalWidth) {
         img.classList.add('portrait');
       }
     };
+    img.src = src;
+    if (img.complete) {
+      // If cached/instant load, onload might not fire; ensure orientation applied
+      if (img.naturalHeight > img.naturalWidth) {
+        img.classList.add('portrait');
+      }
+    }
     slide.appendChild(img);
 
     const cap = document.createElement('div');
