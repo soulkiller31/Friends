@@ -296,6 +296,12 @@ function buildSlider(urls, quotes) {
     const img = document.createElement('img');
     img.src = src;
     img.alt = `Memory ${idx + 1}`;
+    img.onload = () => {
+      // mark portrait images so CSS can contain instead of crop
+      if (img.naturalHeight > img.naturalWidth) {
+        img.classList.add('portrait');
+      }
+    };
     slide.appendChild(img);
 
     const cap = document.createElement('div');
