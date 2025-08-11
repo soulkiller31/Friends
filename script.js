@@ -54,8 +54,20 @@ const fallbackPhotos = [
   'https://images.unsplash.com/photo-1541101767792-f9b2b1c4f127?q=80&w=1600&auto=format&fit=crop'
 ];
 
-// Attempt to load local images named assets/photos/pic1.jpg..pic20.jpg
+// Attempt to load local images via manifest; fallback to heuristic search
 async function loadLocalPhotos() {
+  // 1) Try manifest first
+  try {
+    const res = await fetch('/assets/manifest.json', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.images) && data.images.length > 0) {
+        return data.images;
+      }
+    }
+  } catch (_) {}
+
+  // 2) Fallback heuristic discovery
   // Fast, budgeted discovery to avoid long blocking when files are missing
   const likelyCombos = [
     { base: '/assets/', prefix: 'pic', first: 'pic1.jpg' },
