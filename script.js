@@ -361,6 +361,13 @@ function buildSlider(urls, quotes) {
         img.classList.add('portrait');
       }
     };
+    img.onerror = () => {
+      // Mark slide to show an error state instead of blank
+      slide.style.background = 'repeating-linear-gradient(45deg, #eee, #eee 10px, #f8f8f8 10px, #f8f8f8 20px)';
+      img.style.display = 'none';
+      const errorCap = slide.querySelector('.caption');
+      if (errorCap) errorCap.textContent = 'Image failed to load';
+    };
     img.src = src;
     if (img.complete) {
       // If cached/instant load, onload might not fire; ensure orientation applied
