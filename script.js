@@ -58,17 +58,17 @@ const fallbackPhotos = [
 async function loadLocalPhotos() {
   // Fast, budgeted discovery to avoid long blocking when files are missing
   const likelyCombos = [
-    { base: './assets/', prefix: 'pic', first: 'pic1.jpg' },
-    { base: './assets/photos/', prefix: 'pic', first: 'pic1.jpg' },
-    { base: './assets/', prefix: '', first: '1.jpg' },
-    { base: './assets/photos/', prefix: '', first: '1.jpg' },
+    { base: '/assets/', prefix: 'pic', first: 'pic1.jpg' },
+    { base: '/assets/photos/', prefix: 'pic', first: 'pic1.jpg' },
+    { base: '/assets/', prefix: '', first: '1.jpg' },
+    { base: '/assets/photos/', prefix: '', first: '1.jpg' },
   ];
-  const fallbackExts = ['jpg', 'jpeg', 'png', 'webp'];
+  const fallbackExts = ['jpg', 'jpeg', 'png', 'webp', 'JPG', 'JPEG', 'PNG', 'WEBP', 'gif', 'GIF'];
 
-  // Try to find a primer file quickly
+  // Try to find a primer file quickly (allow more time on cold deploys)
   let discovered = null;
   for (const combo of likelyCombos) {
-    const ok = await checkImageExists(`${combo.base}${combo.first}`, 400);
+    const ok = await checkImageExists(`${combo.base}${combo.first}`, 1800);
     if (ok) {
       discovered = combo;
       break;
@@ -88,7 +88,7 @@ async function loadLocalPhotos() {
     let foundOne = false;
     for (const url of candidates) {
       // eslint-disable-next-line no-await-in-loop
-      if (await checkImageExists(url, 350)) {
+      if (await checkImageExists(url, 1500)) {
         present.push(url);
         foundOne = true;
         break;
@@ -96,7 +96,7 @@ async function loadLocalPhotos() {
     }
     if (!foundOne) {
       consecutiveMisses += 1;
-      if (consecutiveMisses >= 6) break; // bail out early if many gaps
+      if (consecutiveMisses >= 10) break; // allow more misses before bailing in production
     } else {
       consecutiveMisses = 0;
     }
@@ -112,8 +112,10 @@ function checkImageExists(url, timeoutMs = 2500) {
     const timer = setTimeout(() => finish(false), timeoutMs);
     img.onload = () => { clearTimeout(timer); finish(true); };
     img.onerror = () => { clearTimeout(timer); finish(false); };
-    const sep = url.includes('?') ? '&' : '?';
-    img.src = url + `${sep}t=${Date.now()}`; // cache-bust during dev
+    // Avoid breaking relative paths with './' vs '/' differences
+    const normalized = url.replace(/^(\.\/)/, '/');
+    const sep = normalized.includes('?') ? '&' : '?';
+    img.src = normalized + `${sep}t=${Date.now()}`; // cache-bust during dev
   });
 }
 
