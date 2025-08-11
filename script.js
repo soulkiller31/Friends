@@ -45,7 +45,14 @@ const fallbackPhotos = [
 
 // Attempt to load local images named assets/photos/pic1.jpg..pic10.jpg
 async function loadLocalPhotos() {
-  const candidates = Array.from({ length: 10 }, (_, i) => `./assets/photos/pic${i + 1}.jpg`);
+  const maxCount = 20;
+  const exts = ['jpg', 'jpeg', 'png', 'webp', 'jgp']; // include common and typo
+  const candidates = [];
+  for (let i = 1; i <= maxCount; i++) {
+    for (const ext of exts) {
+      candidates.push(`./assets/photos/pic${i}.${ext}`);
+    }
+  }
   const present = [];
   for (const url of candidates) {
     // eslint-disable-next-line no-await-in-loop
